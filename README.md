@@ -6,11 +6,11 @@ This repository contains research summaries, links, relevance assessments, and c
 
 ## Digests
 
-- [July 21–27, 2026](digests/2026/2026-07-27.md)
-- [July 28–August 3, 2026](digests/2026/2026-08-03.md)
-- [August 4–10, 2026](digests/2026/2026-08-10.md)
-- [August 11–17, 2026](digests/2026/2026-08-17.md)
 - [August 18–24, 2026](digests/2026/2026-08-24.md)
+- [August 11–17, 2026](digests/2026/2026-08-17.md)
+- [August 4–10, 2026](digests/2026/2026-08-10.md)
+- [July 28–August 3, 2026](digests/2026/2026-08-03.md)
+- [July 21–27, 2026](digests/2026/2026-07-27.md)
 
 New digests are added weekly as Markdown files under `digests/YYYY/`.
 
