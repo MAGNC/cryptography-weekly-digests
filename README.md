@@ -2,120 +2,121 @@
 
 > The latest weekly digest is displayed directly on this page. Each issue is also preserved as a dated Markdown file in the archive.
 
-[Archived copy of this issue](digests/2026/2026-09-14.md)
+[Archived copy of this issue](digests/2026/2026-09-21.md)
 
 ---
 
-**Coverage:** first public postings from September 8–14, 2026. Cross-posts and routine updates were removed; newly deposited conference papers and revisions are labeled separately.
+**Coverage:** first public postings from September 15–21, 2026. Cross-posts and routine updates were removed; conference deposits and material revisions are labeled separately.
 
 ## Executive summary
 
-This week brought two unusually concrete cryptanalytic results: the TII-254 McEliece key-recovery challenge was solved with a reproducible artifact, and a new attack places Frobenius-UOV forgery costs far below its advertised security levels. A separate study breaks both the unprotected and finite-precision “protected” neural-network implementations of AES considered in recent deep-neural cryptography work. On the constructive side, new results claim a dimension-preserving NP-hardness reduction for ideal-lattice SVP/CVP, more practical private and verifiable LLM inference, tighter lattice-based anonymous credentials, and the first mechanized computational proof of post-compromise security for a ratchet. These are new preprints or author-reported evaluations and still require independent validation.
+Implementation attacks lead this week: a demonstrated clock-glitch fault bypasses the ciphertext comparison in mainstream Kyber/ML-KEM code and enables full secret-key recovery, while practical chosen-ciphertext attacks recover the key of full-round DuX and reduced-round YuX. A separate polynomial-time structural attack breaks McEliece variants built from elliptic algebraic-geometry codes, but does not apply to Classic McEliece’s binary Goppa construction. Constructive work includes nearly halving an evaluation-key bottleneck in matrix-native FHE, faster differentially oblivious group-by aggregation, and formal analyses of Bitcoin silent payments and Ethereum EIP-7702 delegation. These are fresh papers and author-reported experiments; independent reproduction and scheme-specific impact assessment remain important.
 
 ## Most relevant papers
 
-### 1. [Two-Anchor Holdout/Hermite: Solving the TII-254 McEliece Key Recovery Challenge](https://eprint.iacr.org/2026/1986)
+### 1. [Default Correct: A New Fault Surface in the Comparison Booleanisation of Kyber-KEM](https://eprint.iacr.org/2026/2069)
 
-**Markku-Juhani O. Saarinen · September 14 · Post-quantum cryptanalysis**
+**Anirudh Jaiswal, Abhilash Kumar Das, Dhiman Saha · September 19 · Post-quantum implementation attacks**
 
-The paper reports recovery of the full support and Goppa polynomial for the TII-254 challenge, using two conditioned relation kernels, removal of a common nuisance space, and reconstruction of an \(\mathbb F_{2^8}\) projective-line geometry. The two final Krylov sequences consumed 27.2 NVIDIA GH200 GPU-hours, excluding reconstruction and CPU processing; the author provides code, compact recovery inputs, an independent verifier, and Lean proofs for reusable linear-algebra steps.
+The authors target the Booleanisation stage between byte-wise mismatch accumulation and the conditional move in Kyber’s Fujisaki–Okamoto ciphertext check. A single clock glitch on an ARM Cortex-M4 reportedly forces the failure flag to zero across pqm4, PQClean, and reference Kyber-512/768/1024 implementations at all tested optimization levels; using the resulting plaintext-checking oracle, they recover each parameter set’s full secret key in one on-device run.
 
-**Why it matters:** It turns the recently proposed holdout/Hermite line of attack into a completed, checkable key recovery on the hardest solved challenge under TII’s original brute-force metric.
+**Why it matters:** The fault sits upstream of the commonly recommended default-fail conditional-move ordering, so code already using that defense remains vulnerable in the tested environment.
 
-**Caveat:** TII-254 uses small parameters \((m,t,n)=(8,12,223)\) and is not a break of standardized Classic McEliece; scaling the method and its memory requirements to production parameters remains the central question.
+**Caveat:** This is a physical fault-injection attack requiring device access and precise glitching; portability to other processors, compilers, hardened code, and standardized ML-KEM implementations must be evaluated separately.
 
-### 2. [A Forgery Attack against Frobenius-UOV](https://eprint.iacr.org/2026/1927)
+### 2. [Practical Key Recovery Attacks on Full DuX and Reduced-Round YuX](https://eprint.iacr.org/2026/2045)
 
-**Augustin Bariant · September 12 · Post-quantum signatures / multivariate cryptanalysis**
+**Xingwei Ren, Bo Xu, Zhenyu Xiong, Yongqiang Li, Mingsheng Wang · September 17 · Symmetric cryptanalysis / FHE-friendly ciphers**
 
-The attack exploits F-UOV’s fixed Frobenius exponents to reduce its signing equation to two low-degree bivariate equations and solve them through a linearized resultant, without the secret key. Under heuristic success assumptions, the paper estimates roughly \(2^{45}\), \(2^{52}\), and \(2^{53}\) field operations against the claimed 128-, 192-, and 256-bit instances.
+The paper exploits unexpectedly slow algebraic-degree growth in decryption to derive chosen-ciphertext zero-sum attacks. The authors report recovering a random full-round, 12-round DuX key over \(\mathbb F_{65537}\) from \(2^{32}\) chosen ciphertexts in 45 core-hours, and experimentally recover keys for 11 of 14 rounds of two YuX variants with the same data complexity.
 
-**Why it matters:** If confirmed, every proposed parameter set is forgeable far below its stated security level, making this a design-level issue rather than a modest parameter correction.
+**Why it matters:** The full DuX result is a practical master-key recovery, and the Yu2X-16 data requirement drops from a previously reported \(2^{96}\) to \(2^{32}\).
 
-**Caveat:** The complexity estimates depend on heuristic success probabilities, and the paper proposes changing the exponents as a possible mitigation whose security still needs analysis.
+**Caveat:** The attacks require a chosen-ciphertext interface and target these specialized FHE-oriented cipher designs; the full 14-round YuX variants are not broken here.
 
-### 3. [Cryptanalysis of Deep Neural Cryptography: Second Round Key Recovery on the Unprotected Implementation and a Floating-Point Attack on the Protected Implementation of AES](https://eprint.iacr.org/2026/1919)
+### 3. [A Polynomial-Time Attack on the McEliece Cryptosystem on Elliptic Codes with Arbitrary Divisors](https://eprint.iacr.org/2026/2050)
 
-**Sisung Kim, Dongjae Lee · September 10 · Applied cryptanalysis**
+**Artyom Kuninets, Ekaterina Malygina, Evgeniy Melnichuk · September 17 · Code-based cryptanalysis**
 
-For the natural ReLU-network implementation of AES-256, the authors extend earlier first-round attacks to second-round key recovery in about \(2^{39}\) chosen-plaintext queries. More strikingly, they report recovering the first-round key of the proposed protected AES-128 network in 128 chosen queries across bfloat16, float16, float32, and float64, exploiting an input that finite-precision rounding fails to map to a bit; a pre-rounding clamp blocks this specific attack.
+For McEliece systems instantiated with elliptic algebraic-geometry codes, the authors show how three known evaluation-divisor points suffice to reconstruct the entire divisor in polynomial time. They then remove the hint by enumerating a pair of field elements under curve automorphisms, obtaining an equivalent key in average polynomial time for the stated model.
 
-**Why it matters:** It shows that an exact-real proof for a neural implementation does not automatically survive actual floating-point execution.
+**Why it matters:** It closes off a broader class of elliptic-code McEliece proposals, including arbitrary effective divisors that were not covered by earlier structural attacks.
 
-**Caveat:** The clamp addresses the demonstrated weakness, but the authors leave a complete finite-precision security proof open; the result concerns these DNN encodings, not conventional AES implementations.
+**Caveat:** The result concerns elliptic algebraic-geometry codes, not the binary Goppa codes used by standardized Classic McEliece.
 
-### 4. [NP-Hardness of Ideal Lattice Problems](https://eprint.iacr.org/2026/2003)
+### 4. [Silent Payments, Formally: Security, Scanning Costs, and Blind Collaborative Payments](https://eprint.iacr.org/2026/2037)
 
-**Daniel E. Martin · September 14 · Lattice foundations**
+**Rong Qian, Yu Cheng, Mengrun Chen, Yuchang Zhang, Zengli Guo · September 17 · Bitcoin privacy protocols**
 
-The paper claims deterministic, dimension-preserving polynomial-time reductions from generic lattice problems to ideal-lattice versions of SVP and CVP in the \(\ell_2\) norm. The constructed ideal is invertible in a monogenic, totally real number ring with polynomial-bit-length description; requiring the ring to be the full ring of integers adds a conjectural bounded-error quantum step.
+The paper gives DDH-based receiver and co-transactor unlinkability proofs for BIP-352 silent payments, analyzes label linking and scanning-denial costs, and proposes a set-probing scanner reported to run 39× faster. For collaborative transactions it formalizes recipient-output exposure and malformed-share fund loss, then proposes blind collaborative payments with information-theoretic payer privacy.
 
-**Why it matters:** Worst-case hardness for structured ideal lattices is a longstanding foundational question because structured lattices underpin efficient post-quantum cryptography.
+**Why it matters:** BIP-352 is already implemented by wallets, so formalizing both privacy and denial-of-service economics addresses a live protocol rather than a hypothetical deployment.
 
-**Caveat:** The result is a fresh theoretical preprint, and the constructed rings and ideals do not by themselves establish hardness for the specific cyclotomic or module-lattice distributions used in deployed schemes.
+**Caveat:** Security and cost conclusions depend on the modeled wallet behavior, fee data, scanning cap, and DDH assumptions; delegated scanning still has no safe default in the authors’ analysis.
 
-### 5. [Maverick: Private and Verifiable LLM Inference Made Practical via Matrix-Vector Multiplication Delegation](https://eprint.iacr.org/2026/1955)
+### 5. [Trace-Factored BigSwitch for Matrix-Friendly FHE](https://eprint.iacr.org/2026/2058)
 
-**Ben Merbaum, Mohammad Amin Raeisi, Wenhao Wang, Charalampos Papamanthou, Katerina Sotiraki, Fan Zhang · September 13 · Private and verifiable computation**
+**Dong Jin Park, Hyunseok Jeong, Minwook Jeong, Jaeky Oh, Yongwoo Lee, Young-Sik Kim · September 18; revised September 21 · Fully homomorphic encryption**
 
-Maverick delegates the matrix-vector products dominating LLM inference while using an information-theoretically sound verification protocol with transparent preprocessing and LPN-based pseudorandom masks for input privacy. On Qwen3-4B, the prototype reports up to 17× speedup over local inference with online mask generation, 45× with precomputation, and 44× for verification-only mode in its one-client-thread experiments.
+Trace-Factored BigSwitch exploits the rank-one tensor structure of Trace-generated keys in the Gentry–Lee framework to eliminate a large product-secret evaluation key. In an OpenFHE-linked \(n=256\) prototype, the authors report reducing the relevant coefficient-domain key footprint from 768.0 to 385.5 MiB, peak memory by 15.31%, and cold key preparation by 51–63%; fused relinearization keeps measured overhead at 5.90% for a GPT-2 attention kernel and lower for deeper accumulation.
 
-**Why it matters:** It targets privacy and correctness together while keeping server overhead close to ordinary inference, a useful point in the design space between local execution and heavy generic cryptography.
+**Why it matters:** Evaluation-key memory and initialization are major obstacles to deploying matrix-native FHE for encrypted linear algebra and attention.
 
-**Caveat:** The largest gains depend on precomputation, server parallelism, client configuration, and simulated network conditions; model confidentiality is not the same guarantee as user-input privacy.
+**Caveat:** The gains are specific to the GL construction, selected dimensions, and workload shapes; comparisons with other FHE representations require normalized security and end-to-end measurements.
 
-### 6. [Compact Lattice Anonymous Credentials from Tighter Approximate Range Proofs](https://eprint.iacr.org/2026/1920)
+### 6. [Differentially Oblivious Resizing for Group-By Aggregations](https://eprint.iacr.org/2026/2065)
 
-**Corentin Jeudy, Olivier Sanders · September 10 · Post-quantum privacy / zero knowledge**
+**James Bell-Clark, Albert Cheu, Adria Gascon, Jonathan Katz, Lukas Gerlach · September 19 · Privacy-preserving analytics**
 
-The authors introduce tighter approximate range proofs for the Lyubashevsky–Nguyen–Plançon lattice zero-knowledge protocol and combine them with further optimizations for anonymous credentials based on standard lattice assumptions. Their stated goal is to narrow the efficiency gap with systems relying on more specialized interactive assumptions while retaining quantum-safe foundations.
+ROGA combines oblivious single-access machines with a differentially private resize decision, allowing confidential-VM group-by aggregation to allocate memory near actual use instead of the worst-case domain. The Rust implementation includes compiled-trace verification for its fixed-capacity operations and reports up to 50.4× speedup over cited oblivious schemes, up to 14× less memory, and 5.3× end-to-end overhead on a 277-million-packet trace using 16 cores.
 
-**Why it matters:** Anonymous credentials are central to privacy-preserving identity systems, and standard-assumption post-quantum designs remain materially less efficient than classical alternatives.
+**Why it matters:** Data-dependent memory allocation is a practical leakage channel and resource bottleneck for confidential analytics.
 
-**Caveat:** The abstract does not provide enough normalized implementation data to judge end-to-end wallet performance, disclosure sizes, or comparison under uniform security parameters.
+**Caveat:** Resizing intentionally releases a differentially private signal, and the security argument still depends on the CVM, public parameters, leakage model, and correctness of the verified compilation boundary.
 
-### 7. [Information-theoretic two-server PIR requires \((6-o(1))\log n\) bits of communication](https://eprint.iacr.org/2026/1959)
+### 7. [DelegProof: A Machine-Checked Security Analysis of EIP-7702 Delegation](https://eprint.iacr.org/2026/2060)
 
-**Keewoo Lee · September 13 · Private information retrieval / foundations**
+**Rong Qian, Yu Cheng, Lingyu Gao, Yuchang Zhang, Zengli Guo · September 19 · Blockchain protocol verification**
 
-The paper raises the communication lower bound for information-theoretic two-server PIR from \(5\log n\) to \((6-o(1))\log n\). It follows the quantum random-access-code route of prior proofs but replaces low-bias binary readout and amplification with a real-valued estimator whose cost is controlled by its second moment; the technique also strengthens lower bounds for smooth and locally decodable codes.
+DelegProof models EIP-7702 authorization together with the ERC-4337 EntryPoint in Tamarin. The authors reproduce four documented attack classes, derive ten machine-checked attack patterns—including temporary-delegation failure, storage confusion, and an ERC-1271 substitution—and verify that chain-ID restrictions, account-bound initialization, and namespaced storage prevent specified classes.
 
-**Why it matters:** Tighter lower bounds clarify how far information-theoretic PIR protocols can improve and rule out part of the remaining low-communication design space.
+**Why it matters:** EIP-7702 is live on Ethereum and changes the security boundary of ordinary externally owned accounts, making machine-checked lifecycle analysis immediately relevant.
 
-**Caveat:** The bound is specific to two-server information-theoretic PIR and does not directly constrain computational PIR or protocols with more servers.
+**Caveat:** Symbolic proofs cover the model and trusted event abstractions, not all contract code or wallet behavior; the accompanying empirical claim that 63% of observed delegations are malicious also depends on dataset construction and classification.
 
-### 8. [Secrecy in Squirrel and the Post-Compromise Security of a Ratchet](https://eprint.iacr.org/2026/1912)
+### 8. [Witness Encryption for NP from SNARGs and Groups](https://eprint.iacr.org/2026/2063)
 
-**Clément Hérouard, Charlie Jacomme, Adrien Koutsos, Joseph Lallemand · September 10 · Protocol verification / CCS 2026 full version**
+**Zhengzhong Jin · September 19 · Cryptographic foundations**
 
-The authors extend Squirrel so secrecy can be handled as a first-class logical notion and use it to verify post-compromise security for an asymmetric ratchet in the computational model. They describe this as the first mechanized computational PCS proof for a ratchet, whereas earlier machine-checked analyses were limited to symbolic models.
+The paper constructs witness encryption for NP in the generic-group model from SNARGs with subexponential soundness and polylogarithmic online verification after preprocessing. Its main technical component is a Karp–Levin reduction from small-circuit satisfiability to a gap minimum-distance problem over large prime fields, yielding unconditional extractable witness encryption for polylogarithmic-size circuits inside the generic-group model.
 
-**Why it matters:** Ratchets underpin Signal, WhatsApp, and other secure messengers, and mechanizing their computational arguments can expose assumptions that symbolic models abstract away.
+**Why it matters:** Witness encryption is an unusually powerful primitive, and deriving it from SNARGs plus algebraic groups narrows the assumptions needed in an idealized model.
 
-**Caveat:** The artifact proves an asymmetric-ratchet model, not the complete deployed Signal, WhatsApp, or iMessage protocols; this ePrint is labeled a minor revision of CCS 2026 work.
+**Caveat:** The generic-group model, subexponential security, large-field reduction, and polylogarithmic circuit restriction leave a substantial gap to practical or standard-model witness encryption.
 
 ## Other notable papers by topic
 
-- **PIR and private computation:** [ReinsPIRe](https://eprint.iacr.org/2026/1934) moves most server-side FHE work to hardware-friendly matrix operations and reports 5.9 GB/s per core—2× its cited predecessor—plus a verifiable variant with much smaller long-term client storage.
-- **Zero knowledge and AI:** [Sound Debloating of Redundant Checks in Zero-Knowledge Machine-Learning Circuits](https://arxiv.org/abs/2609.10149), first posted September 9, uses whole-circuit abstract interpretation to remove only checks entailed elsewhere; across circuits up to 25.3 million constraints, the authors report removing up to 48.7% and cutting prover time by up to 72.8%.
-- **FHE hardware:** [PHAT](https://arxiv.org/abs/2609.11613), first posted September 10, proposes an optically addressed phase-change-memory accelerator for TFHE and reports modeled 2.14–5.10× speedups over a cited ASIC across four workloads.
-- **Post-quantum deployment:** [A Post-Quantum Cryptography Recommendation System with TLS Validation](https://eprint.iacr.org/2026/1938) shows that preferred algorithms can change with client/server placement and that certificate-stack and wire-format failures can invalidate recommendations based only on microbenchmarks.
-- **Quantum foundations:** [Trapdoor Functions with Secure Key Leasing and Copy Protection](https://eprint.iacr.org/2026/1913) defines quantum trapdoors that can be leased, deleted, or copy-protected and derives encryption with decryption keys designed to survive malicious ciphertexts; constructions rely on LWE and, for copy protection, indistinguishability obfuscation.
-- **Conference deposits and revisions:** [From Specs to Apps](https://eprint.iacr.org/2026/1979) monitors instrumented Signal Desktop and WhatsApp Web executions against Tamarin-compatible models and is labeled a minor revision of CCS 2026 work. [Oblivious Signaling](https://eprint.iacr.org/2026/1975), [Better Security Proofs for X3DH and XHMQV](https://eprint.iacr.org/2026/1980), and [Universally Composable Reverse Firewalls for OLE](https://eprint.iacr.org/2026/2012) are likewise labeled conference full versions or revisions and were not ranked as wholly new disclosures.
+- **Post-quantum privacy:** [Practical Group Signatures from a Tag-Based NTRU Sampler](https://eprint.iacr.org/2026/2077) proposes compact, runtime-oriented lattice group signatures and a reusable tag-based sampler, but relies on two new hybrid NTRU/ISIS-style assumptions that need scrutiny.
+- **Differential privacy and MPC:** [On Aborts in Differential Privacy](https://eprint.iacr.org/2026/2059) formalizes how selective aborts affect privacy and shows stronger guarantees for fair or partially fair executions than ordinary security with abort.
+- **Quantum cryptanalysis:** [Low-Space Quantum Discrete Logarithms on Genus-Two Jacobians](https://eprint.iacr.org/2026/2057) reports an explicit 1,923-logical-qubit allocation for a cited challenge instance—37.2% below its comparison—with a sub-\(2^{60}\) capped Toffoli count under stated modeling assumptions.
+- **Side-channel analysis:** [A Unified Framework for Statistical Side-Channel Distinguishers](https://eprint.iacr.org/2026/2041) develops a hypothesis-testing framework for leakage assessment. [Soft Analytical Side-Channel Attacks on SHA-2 and HMAC](https://eprint.iacr.org/2026/2071) is a TCHES 2026 repository deposit and was not treated as a new disclosure.
+- **Zero knowledge and provenance:** [ZK-JPEG](https://eprint.iacr.org/2026/2039) proves that JPEG compression and selected edits were correctly applied to a hidden committed image; it is labeled a minor revision of SCN 2026 work.
+- **Conference deposits and major revisions:** [A Unified Reduction from RLWE to MP-LWE](https://eprint.iacr.org/2026/2026) is an ASIACRYPT 2026 publication deposited this week. [New PCFs and Exponent VRFs from DCR](https://eprint.iacr.org/2026/2030) and [Distributed SNARGs Resilient to Corrupt Verifiers](https://eprint.iacr.org/2026/2068) are labeled major revisions of ASIACRYPT and TCC 2026 work, respectively.
 
 ## Watch next
 
-- Whether the TII-254 artifact is independently reproduced and how holdout/Hermite costs scale toward Classic McEliece parameters.
-- Confirmation of the Frobenius-UOV forgery estimates and analysis of revised exponent choices.
-- A finite-precision security definition and proof for protected neural implementations, beyond the proposed clamp for the demonstrated AES attack.
-- Proof-level review of the ideal-lattice NP-hardness reduction and clarification of which structured ring families it reaches.
-- Independent end-to-end benchmarking of Maverick, lattice anonymous credentials, ReinsPIRe, ZK-circuit debloating, and PHAT under common security and hardware assumptions.
+- Independent reproduction of the Kyber Booleanisation fault across additional processors, compilers, and hardened ML-KEM libraries, followed by evaluation of the proposed integrity-checked fix.
+- Design-team responses for DuX and YuX, and whether the algebraic techniques extend to other low-degree FHE-friendly ciphers.
+- Confirmation of the elliptic-code McEliece reconstruction and a clear map of which algebraic-geometry-code proposals remain unaffected.
+- Audits of deployed BIP-352 scanners, collaborative-payment implementations, and EIP-7702 wallets against the newly formalized failure modes.
+- Reproduction of the FHE and ROGA performance claims under uniform security, hardware, memory, and leakage assumptions.
 
 
 ---
 
 ## Previous digests
 
+- [September 8–14, 2026](digests/2026/2026-09-14.md)
 - [September 1–7, 2026](digests/2026/2026-09-07.md)
 - [August 18–24, 2026](digests/2026/2026-08-24.md)
 - [August 11–17, 2026](digests/2026/2026-08-17.md)
