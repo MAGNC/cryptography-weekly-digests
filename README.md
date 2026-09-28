@@ -2,120 +2,121 @@
 
 > The latest weekly digest is displayed directly on this page. Each issue is also preserved as a dated Markdown file in the archive.
 
-[Archived copy of this issue](digests/2026/2026-09-21.md)
+[Archived copy of this issue](digests/2026/2026-09-28.md)
 
 ---
 
-**Coverage:** first public postings from September 15–21, 2026. Cross-posts and routine updates were removed; conference deposits and material revisions are labeled separately.
+**Coverage:** first public postings from September 22–28, 2026. Cross-posts and routine updates were removed; conference deposits and material revisions are labeled separately.
 
 ## Executive summary
 
-Implementation attacks lead this week: a demonstrated clock-glitch fault bypasses the ciphertext comparison in mainstream Kyber/ML-KEM code and enables full secret-key recovery, while practical chosen-ciphertext attacks recover the key of full-round DuX and reduced-round YuX. A separate polynomial-time structural attack breaks McEliece variants built from elliptic algebraic-geometry codes, but does not apply to Classic McEliece’s binary Goppa construction. Constructive work includes nearly halving an evaluation-key bottleneck in matrix-native FHE, faster differentially oblivious group-by aggregation, and formal analyses of Bitcoin silent payments and Ethereum EIP-7702 delegation. These are fresh papers and author-reported experiments; independent reproduction and scheme-specific impact assessment remain important.
+Post-quantum implementation and design failures dominate this week: biased vinegar sampling enables practical secret-key recovery for four SNOVA alternative parameter sets, while separate polynomial-time attacks recover the published secret structure of Polar-KEM and every supplied BAG-Loong known-answer-test key. A concrete quantum analysis of unrestricted isogeny group actions also suggests substantially larger base fields than performance-oriented discussions may imply. Constructive work includes faster Reed–Solomon polynomial commitments, an application-layer security model for zkTLS, lower-round MPC threshold ML-KEM, and a formal treatment of SSH’s Terrapin state-manipulation surface. These are fresh papers and author-reported experiments; independent reproduction and scheme-specific impact assessment remain important.
 
 ## Most relevant papers
 
-### 1. [Default Correct: A New Fault Surface in the Comparison Booleanisation of Kyber-KEM](https://eprint.iacr.org/2026/2069)
+### 1. [Recovering SNOVA Secret Keys from Biased Vinegar Sampling](https://eprint.iacr.org/2026/2154)
 
-**Anirudh Jaiswal, Abhilash Kumar Das, Dhiman Saha · September 19 · Post-quantum implementation attacks**
+**Ward Beullens, Basil Hess · September 22 · Post-quantum signature cryptanalysis**
 
-The authors target the Booleanisation stage between byte-wise mismatch accumulation and the conditional move in Kyber’s Fujisaki–Okamoto ciphertext check. A single clock glitch on an ARM Cortex-M4 reportedly forces the failure flag to zero across pqm4, PQClean, and reference Kyber-512/768/1024 implementations at all tested optimization levels; using the resulting plaintext-checking oracle, they recover each parameter set’s full secret key in one on-device run.
+The Round-3 SNOVA signer maps uniform bytes into finite-field vinegar variables in a way that creates a small statistical bias. The authors turn the leakage into a q-ary LPN problem and report full secret-key recovery for four of the six affected odd-characteristic alternative parameter sets using 9–180 million signatures and at most 16 minutes of wall-clock time.
 
-**Why it matters:** The fault sits upstream of the commonly recommended default-fail conditional-move ordering, so code already using that defense remains vulnerable in the tested environment.
+**Why it matters:** This is a practical key-recovery result caused by a concrete sampling choice, and the authors say the remaining affected sets also fall far below their claimed security under less optimized attacks.
 
-**Caveat:** This is a physical fault-injection attack requiring device access and precise glitching; portability to other processors, compilers, hardened code, and standardized ML-KEM implementations must be evaluated separately.
+**Caveat:** The attack does not cover SNOVA parameter sets over characteristic two, and its large signature requirements may limit exploitation in deployments that strictly cap signing queries; uniform sampling is presented as a complete fix for this issue.
 
-### 2. [Practical Key Recovery Attacks on Full DuX and Reduced-Round YuX](https://eprint.iacr.org/2026/2045)
+### 2. [Structural Cryptanalysis of Polar-KEM: Direct Recovery of the Secret Isometry](https://eprint.iacr.org/2026/2211)
 
-**Xingwei Ren, Bo Xu, Zhenyu Xiong, Yongqiang Li, Mingsheng Wang · September 17 · Symmetric cryptanalysis / FHE-friendly ciphers**
+**Yuyang Xiao, Long Chen, Zhenfeng Zhang · September 25 · Post-quantum KEM cryptanalysis**
 
-The paper exploits unexpectedly slow algebraic-degree growth in decryption to derive chosen-ciphertext zero-sum attacks. The authors report recovering a random full-round, 12-round DuX key over \(\mathbb F_{65537}\) from \(2^{32}\) chosen ciphertexts in 45 core-hours, and experimentally recover keys for 11 of 14 rounds of two YuX variants with the same data complexity.
+The authors argue that Polar-KEM’s supposedly secret reduced basis is reproducible from public parameters because its code construction and LLL reduction are public and deterministic under the executable specification. Once that basis is reconstructed, the secret orthogonal map follows from one matrix multiplication by the inverse basis, giving polynomial-time key recovery without solving a lattice isomorphism or shortest-vector problem.
 
-**Why it matters:** The full DuX result is a practical master-key recovery, and the Yu2X-16 data requirement drops from a previously reported \(2^{96}\) to \(2^{32}\).
+**Why it matters:** If the specification is interpreted as the authors do, the central secret transformation is exposed by ordinary linear algebra rather than a hard lattice problem.
 
-**Caveat:** The attacks require a chosen-ciphertext interface and target these specialized FHE-oriented cipher designs; the full 14-round YuX variants are not broken here.
+**Caveat:** The result targets the published construction and its natural deterministic implementation; treating unspecified erasure parameters or reduction tie-breaking as secret randomness would define a modified scheme whose correctness, entropy, and security still require analysis.
 
-### 3. [A Polynomial-Time Attack on the McEliece Cryptosystem on Elliptic Codes with Arbitrary Divisors](https://eprint.iacr.org/2026/2050)
+### 3. [Linear Key Recovery in the BAG-Loong Reference Implementation](https://eprint.iacr.org/2026/2223)
 
-**Artyom Kuninets, Ekaterina Malygina, Evgeniy Melnichuk · September 17 · Code-based cryptanalysis**
+**Zihan Liu · September 26 · Rank-metric cryptanalysis / implementation analysis**
 
-For McEliece systems instantiated with elliptic algebraic-geometry codes, the authors show how three known evaluation-divisor points suffice to reconstruct the entire divisor in polynomial time. They then remove the hint by enumerating a pair of field elements under curve automorphisms, obtaining an equivalent key in average polynomial time for the stated model.
+The BAG-Loong reference implementation samples two secret matrices from fixed, public subspaces even though the specification calls for secret random supports. Projecting the public-key equation removes one support and leaves a linear system; two independent solvers recover the exact secret for all 40 supplied known-answer-test records across four parameter sets, after which the unmodified decapsulation code reproduces the session keys.
 
-**Why it matters:** It closes off a broader class of elliptic-code McEliece proposals, including arbitrary effective divisors that were not covered by earlier structural attacks.
+**Why it matters:** The paper demonstrates complete, reproducible key recovery against the distributed reference artifacts rather than only an asymptotic weakness.
 
-**Caveat:** The result concerns elliptic algebraic-geometry codes, not the binary Goppa codes used by standardized Classic McEliece.
+**Caveat:** The vulnerability is tied to the reference implementation’s support generation; implementations that correctly sample secret supports may not be affected, and the underlying BAG-Loong design still needs separate analysis.
 
-### 4. [Silent Payments, Formally: Security, Scanning Costs, and Blind Collaborative Payments](https://eprint.iacr.org/2026/2037)
+### 4. [Quantum Security Analysis of Unrestricted Isogeny-Based Group Actions](https://eprint.iacr.org/2026/2215)
 
-**Rong Qian, Yu Cheng, Mengrun Chen, Yuchang Zhang, Zengli Guo · September 17 · Bitcoin privacy protocols**
+**Xavier Bonnetain et al. · September 25 · Quantum cryptanalysis / isogenies**
 
-The paper gives DDH-based receiver and co-transactor unlinkability proofs for BIP-352 silent payments, analyzes label linking and scanning-denial costs, and proposes a set-probing scanner reported to run 39× faster. For collaborative transactions it formalizes recipient-output exposure and malformed-share fund loss, then proposes blind collaborative payments with information-theoretic payer privacy.
+The authors implement the qt-Pegasis group action framework as a simulated quantum circuit and use it to estimate both honest evaluation and Kuperberg-style attack costs. Their estimates suggest that a 2048-bit base field offers some reasonable quantum security, while roughly 4096 bits are needed to reach NIST security level 1.
 
-**Why it matters:** BIP-352 is already implemented by wallets, so formalizing both privacy and denial-of-service economics addresses a live protocol rather than a hypothetical deployment.
+**Why it matters:** Recent unrestricted isogeny actions are much faster than CSIDH, but concrete quantum costs have been hard to translate; this work gives a parameter-focused estimate for that newer design space.
 
-**Caveat:** Security and cost conclusions depend on the modeled wallet behavior, fee data, scanning cap, and DDH assumptions; delegated scanning still has no safe default in the authors’ analysis.
+**Caveat:** The conclusions depend on simulated circuits, architectural and memory assumptions, and extrapolated quantum cost models rather than an implemented cryptanalytic machine; independent resource estimation is needed.
 
-### 5. [Trace-Factored BigSwitch for Matrix-Friendly FHE](https://eprint.iacr.org/2026/2058)
+### 5. [ReedWeave: Faster Reed-Solomon Polynomial Commitments from Interleaving and Folding](https://eprint.iacr.org/2026/2147)
 
-**Dong Jin Park, Hyunseok Jeong, Minwook Jeong, Jaeky Oh, Yongwoo Lee, Young-Sik Kim · September 18; revised September 21 · Fully homomorphic encryption**
+**Yuhao Jia, Zhe Li, Chaoping Xing, Yizhou Yao, Chen Yuan, Jielong Zhang · September 22; revised September 24 · Polynomial commitments / zero knowledge**
 
-Trace-Factored BigSwitch exploits the rank-one tensor structure of Trace-generated keys in the Gentry–Lee framework to eliminate a large product-secret evaluation key. In an OpenFHE-linked \(n=256\) prototype, the authors report reducing the relevant coefficient-domain key footprint from 768.0 to 385.5 MiB, peak memory by 15.31%, and cold key preparation by 51–63%; fused relinearization keeps measured overhead at 5.90% for a GPT-2 attention kernel and lower for deeper accumulation.
+ReedWeave begins with an m-ary fold that is simultaneously a random linear combination of interleaved Reed–Solomon codewords, then continues with ordinary binary folding. At degree \(2^{24}\), rate \(1/4\), and 100-bit security on 32 threads, the authors report 475.0 ms commitment, 111.6 ms opening, 2.07 ms verification, and a 594.7 KiB proof—substantially faster than their FRI and STIR comparisons.
 
-**Why it matters:** Evaluation-key memory and initialization are major obstacles to deploying matrix-native FHE for encrypted linear algebra and attention.
+**Why it matters:** The first folding rounds dominate many hash-based polynomial commitments, so reducing that work can improve transparent proof systems broadly.
 
-**Caveat:** The gains are specific to the GL construction, selected dimensions, and workload shapes; comparisons with other FHE representations require normalized security and end-to-end measurements.
+**Caveat:** The headline comparisons use one field, security target, machine, parameter set, and implementation; proof size is smaller than FRI’s but 2.31× STIR’s, and normalized independent benchmarks are still needed.
 
-### 6. [Differentially Oblivious Resizing for Group-By Aggregations](https://eprint.iacr.org/2026/2065)
+### 6. [Rethinking Zero-Knowledge TLS: Proof of Protocol Execution and the Reclaim Protocol](https://eprint.iacr.org/2026/2187)
 
-**James Bell-Clark, Albert Cheu, Adria Gascon, Jonathan Katz, Lukas Gerlach · September 19 · Privacy-preserving analytics**
+**Andrey Bozhko, Kirill Kutsenok · September 23 · zkTLS / protocol security**
 
-ROGA combines oblivious single-access machines with a differentially private resize decision, allowing confidential-VM group-by aggregation to allocate memory near actual use instead of the worst-case domain. The Rust implementation includes compiled-trace verification for its fixed-capacity operations and reports up to 50.4× speedup over cited oblivious schemes, up to 14× less memory, and 5.3× end-to-end overhead on a 277-million-packet trace using 16 cores.
+The paper moves zkTLS security from TLS-specific models to a transport-agnostic, application-layer ideal functionality called zero-knowledge proof of protocol execution. It then presents Reclaim, a three-party construction based on a new distributed-AEAD primitive, and reports attesting a 1,200 KiB response on a lower-mid-range phone in 7.28 seconds.
 
-**Why it matters:** Data-dependent memory allocation is a practical leakage channel and resource bottleneck for confidential analytics.
+**Why it matters:** A common application-level definition makes it easier to compare zkTLS systems and distinguishes proving possession of a valid input–reply pair from proving that a real protocol execution occurred.
 
-**Caveat:** Resizing intentionally releases a differentially private signal, and the security argument still depends on the CVM, public parameters, leakage model, and correctness of the verified compilation boundary.
+**Caveat:** The UC proof and performance claims apply to Reclaim’s stated trust and deployment model; the protocol does not automatically inherit every property of other zkTLS approaches, and the benchmark needs independent reproduction.
 
-### 7. [DelegProof: A Machine-Checked Security Analysis of EIP-7702 Delegation](https://eprint.iacr.org/2026/2060)
+### 7. [Threshold Key Encapsulation Mechanisms via MPC: ML-KEM Compatibility and Optimization](https://eprint.iacr.org/2026/2220)
 
-**Rong Qian, Yu Cheng, Lingyu Gao, Yuchang Zhang, Zengli Guo · September 19 · Blockchain protocol verification**
+**The-Anh Ta, Dongxi Liu, Sid Chau, Jiafan Wang · September 25 · Threshold cryptography / MPC**
 
-DelegProof models EIP-7702 authorization together with the ERC-4337 EntryPoint in Tamarin. The authors reproduce four documented attack classes, derive ten machine-checked attack patterns—including temporary-delegation failure, storage confusion, and an ERC-1271 substitution—and verify that chain-ID restrictions, account-bound initialization, and namespaced storage prevent specified classes.
+The authors reduce the round count of MPC-based threshold ML-KEM decapsulation while retaining standard ML-KEM public keys, ciphertexts, and encapsulation. Their compatible construction reports 145, 218, and 290 rounds for ML-KEM-512, -768, and -1024, while a non-fully-compatible Kyber/KangarooTwelve variant reaches 35 rounds at roughly ML-KEM-512 security.
 
-**Why it matters:** EIP-7702 is live on Ethereum and changes the security boundary of ordinary externally owned accounts, making machine-checked lifecycle analysis immediately relevant.
+**Why it matters:** Standards-compatible threshold decapsulation is attractive for distributed custody and high-assurance key services, but hundreds of interactive rounds are a serious deployment obstacle.
 
-**Caveat:** Symbolic proofs cover the model and trusted event abstractions, not all contract code or wallet behavior; the accompanying empirical claim that 63% of observed delegations are malicious also depends on dataset construction and classification.
+**Caveat:** The proofs use a semi-honest MPC model; the fastest variant changes the KEM internals, and neither construction is yet shown to be practical under malicious security or high-latency networks.
 
-### 8. [Witness Encryption for NP from SNARGs and Groups](https://eprint.iacr.org/2026/2063)
+### 8. [Formally Modeling the Terrapin Attack on SSH](https://eprint.iacr.org/2026/2158)
 
-**Zhengzhong Jin · September 19 · Cryptographic foundations**
+**Jörg Schwenk, Fabian Bäumer, Marcus Brinkmann · September 22 · Secure channels / formal analysis**
 
-The paper constructs witness encryption for NP in the generic-group model from SNARGs with subexponential soundness and polylogarithmic online verification after preprocessing. Its main technical component is a Karp–Levin reduction from small-circuit satisfiability to a gap minimum-distance problem over large prime fields, yielding unconditional extractable witness encryption for polylogarithmic-size circuits inside the generic-group model.
+The authors define channel integrity when an adversary can partially choose state such as SSH sequence numbers, then analyze eight prominent SSH authenticated-encryption modes under ciphertext-only, known-plaintext, and chosen-plaintext variants. They find all three Encrypt-then-MAC modes and SSH ChaCha20-Poly1305 insecure in the ciphertext-only model, while AES-GCM is secure across all three; they also derive a new BEAST-like chosen-plaintext attack on Encrypt-and-MAC CBC.
 
-**Why it matters:** Witness encryption is an unusually powerful primitive, and deriving it from SNARGs plus algebraic groups narrows the assumptions needed in an idealized model.
+**Why it matters:** The work clarifies why nominally authenticated SSH modes react differently to Terrapin-style state manipulation and gives concrete bounds for deployed constructions.
 
-**Caveat:** The generic-group model, subexponential security, large-field reduction, and polylogarithmic circuit restriction leave a substantial gap to practical or standard-model witness encryption.
+**Caveat:** The results concern channel integrity in the proposed model, not a fresh end-to-end exploit against every SSH deployment; actual exposure also depends on negotiation, mitigations, and implementation behavior.
 
 ## Other notable papers by topic
 
-- **Post-quantum privacy:** [Practical Group Signatures from a Tag-Based NTRU Sampler](https://eprint.iacr.org/2026/2077) proposes compact, runtime-oriented lattice group signatures and a reusable tag-based sampler, but relies on two new hybrid NTRU/ISIS-style assumptions that need scrutiny.
-- **Differential privacy and MPC:** [On Aborts in Differential Privacy](https://eprint.iacr.org/2026/2059) formalizes how selective aborts affect privacy and shows stronger guarantees for fair or partially fair executions than ordinary security with abort.
-- **Quantum cryptanalysis:** [Low-Space Quantum Discrete Logarithms on Genus-Two Jacobians](https://eprint.iacr.org/2026/2057) reports an explicit 1,923-logical-qubit allocation for a cited challenge instance—37.2% below its comparison—with a sub-\(2^{60}\) capped Toffoli count under stated modeling assumptions.
-- **Side-channel analysis:** [A Unified Framework for Statistical Side-Channel Distinguishers](https://eprint.iacr.org/2026/2041) develops a hypothesis-testing framework for leakage assessment. [Soft Analytical Side-Channel Attacks on SHA-2 and HMAC](https://eprint.iacr.org/2026/2071) is a TCHES 2026 repository deposit and was not treated as a new disclosure.
-- **Zero knowledge and provenance:** [ZK-JPEG](https://eprint.iacr.org/2026/2039) proves that JPEG compression and selected edits were correctly applied to a hidden committed image; it is labeled a minor revision of SCN 2026 work.
-- **Conference deposits and major revisions:** [A Unified Reduction from RLWE to MP-LWE](https://eprint.iacr.org/2026/2026) is an ASIACRYPT 2026 publication deposited this week. [New PCFs and Exponent VRFs from DCR](https://eprint.iacr.org/2026/2030) and [Distributed SNARGs Resilient to Corrupt Verifiers](https://eprint.iacr.org/2026/2068) are labeled major revisions of ASIACRYPT and TCC 2026 work, respectively.
+- **Post-quantum signatures:** [Dimension-4 SQIsign at Round-3 Parameters](https://eprint.iacr.org/2026/2221) reports a 142-byte level-I signature and 84-byte public key after the September parameter change, at the cost of 9.9× slower verification than the compared dimension-2 implementation.
+- **Lattice foundations:** [Gaussian Kernel Lattices and Smoothing Bounds from Theta Integrals](https://eprint.iacr.org/2026/2180) gives explicit smoothing bounds without GRH, sharply improves parameters in a recent SIS-to-k-SIS reduction, and reports formalizing its main results in Lean.
+- **Proof systems:** [Accordion](https://eprint.iacr.org/2026/2160) folds 64 independent instances before one succinct decision proof and reports up to 2.5× faster proving, 3× faster verification, and 4× smaller proofs than its Plonk comparison. [Jolt-QED](https://eprint.iacr.org/2026/2157) proves in Lean that 51 of 58 generated Jolt bytecode expansions match their RISC-V instruction semantics.
+- **Privacy and data access:** [Write-Public Oblivious RAM](https://eprint.iacr.org/2026/2163) trades hiding write locations for lower cost and reports a 3–4× private-RPC synchronization speedup over Path ORAM, with about 23% slower reads. [Budgeted Threshold Signatures](https://eprint.iacr.org/2026/2176) shows a deterministic bypass in a natural MPC-gating approach and proposes authenticated in-protocol spending limits.
+- **AI-agent security:** [Codetta](https://eprint.iacr.org/2026/2218) presents keyless steganographic coordination for asymmetric LLM agents and reports up to 94× the capacity of its cited asymmetric baseline; its empirical detectability and threat model need broader testing.
+- **Conference deposits and revisions:** [Dance with Noise](https://eprint.iacr.org/2026/2201) is labeled a major revision of a CCS 2026 paper and reports a compressed, fragmentation-free IKEv2 handshake with a 0.002% retry rate over 10,000 connections. [Revisiting Fuzzy PAKE](https://eprint.iacr.org/2026/2196) is a minor revision of ASIACRYPT 2026 work showing how repeated leakage can recover reused fuzzy passwords and reporting large efficiency gains for new protocols.
 
 ## Watch next
 
-- Independent reproduction of the Kyber Booleanisation fault across additional processors, compilers, and hardened ML-KEM libraries, followed by evaluation of the proposed integrity-checked fix.
-- Design-team responses for DuX and YuX, and whether the algebraic techniques extend to other low-degree FHE-friendly ciphers.
-- Confirmation of the elliptic-code McEliece reconstruction and a clear map of which algebraic-geometry-code proposals remain unaffected.
-- Audits of deployed BIP-352 scanners, collaborative-payment implementations, and EIP-7702 wallets against the newly formalized failure modes.
-- Reproduction of the FHE and ROGA performance claims under uniform security, hardware, memory, and leakage assumptions.
+- SNOVA’s parameter or implementation response, especially whether uniform vinegar sampling is adopted and independently tested across all affected alternatives.
+- Clarification from the Polar-KEM and BAG-Loong designers on specification intent, corrected artifacts, and whether the underlying schemes survive after implementation fixes.
+- Independent quantum-resource estimates for qt-Pegasis and the resulting performance/security trade-off at 2048- and 4096-bit base fields.
+- Reproduction of ReedWeave, Reclaim, and Accordion benchmarks under common hardware, security, memory, and proof-size settings.
+- Movement from semi-honest to maliciously secure threshold ML-KEM, plus audits of SSH libraries against the formal chosen-state model.
 
 
 ---
 
 ## Previous digests
 
+- [September 15–21, 2026](digests/2026/2026-09-21.md)
 - [September 8–14, 2026](digests/2026/2026-09-14.md)
 - [September 1–7, 2026](digests/2026/2026-09-07.md)
 - [August 18–24, 2026](digests/2026/2026-08-24.md)
