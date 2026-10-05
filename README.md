@@ -115,7 +115,7 @@ zk-BAN lets a service block credentials associated with abusive past authenticat
 
 ## Previous digests
 
-- [September 29–October 5, 2026](digests/2026/2026-09-28.md)
+- [September 22–28, 2026](digests/2026/2026-09-28.md)
 - [September 15–21, 2026](digests/2026/2026-09-21.md)
 - [September 8–14, 2026](digests/2026/2026-09-14.md)
 - [September 1–7, 2026](digests/2026/2026-09-07.md)
