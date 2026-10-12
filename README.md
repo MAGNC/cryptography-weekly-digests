@@ -2,119 +2,119 @@
 
 > The latest weekly digest is displayed directly on this page. Each issue is also preserved as a dated Markdown file in the archive.
 
-[Archived copy of this issue](digests/2026/2026-10-05.md)
+[Archived copy of this issue](digests/2026/2026-10-12.md)
 
 ---
 
-**Coverage:** first public postings from September 29–October 5, 2026. Cross-posts and routine updates were removed; conference deposits and material revisions are labeled separately.
+**Coverage:** first public postings from October 6–12, 2026. Cross-posts and routine updates were removed; materially important revisions of older papers are labeled separately.
 
 ## Executive summary
 
-This week combines concrete implementation risk with foundational advances. A simulated power-analysis attack recovers Falcon keys despite masking of its preimage computation, while a separate number-field-sieve construction factors affine-padded Rabin moduli faster than generic factoring when a suitable root oracle is available. On the constructive side, new work claims the first broadly applicable information-theoretic MPC with subquadratic communication, while SPIN reports faster code-based correlation generation and proof-system proving. Deployment-oriented analyses identify structural downgrade and interoperability problems in an ITU-T X.509 migration mechanism, and new results sharpen the distinction between quantum designs and genuine pseudorandomness.
+Applied cryptanalysis leads this week: Reverse-Bleichenbacher reduces a standards-conforming RSA PKCS#1 v1.5 padding-oracle attack to a median 1,801 queries and demonstrates single-server, real-software impact under favorable network conditions. A separate theoretical paper gives provable subexponential secret-recovery algorithms for growing families associated with all seven NIST third-round lattice candidates, while explicitly stating that it does not lower the concrete security of current parameter sets. Constructive results break long-standing asymptotic barriers for statistically secure ORAM, oblivious search trees, and RAM-FHE from plain LWE. New work on Fujisaki–Okamoto instantiation, fuzzy PSI, lattice-isomorphism foundations, and VDF separations rounds out a week unusually rich in both practical and foundational claims; all are fresh preprints requiring independent scrutiny.
 
 ## Most relevant papers
 
-### 1. [When Masking Preimage Computation Isn’t Enough: A Power Analysis Attack on Masked Implementations of Falcon](https://eprint.iacr.org/2026/2313)
+### 1. [Reverse-Bleichenbacher: Bleichenbacher Attacks are Practical Again](https://eprint.iacr.org/2026/2414)
 
-**Keng-Yu Chen · October 2 · Post-quantum implementation attacks**
+**Youheng Lü, Lorenz Hetterich, Riccardo Zanotto, Cas Cremers, Michael Schwarz, Lukas Gerlach · October 11 · Applied cryptanalysis**
 
-The attack exploits leakage when masked shares are recombined after Falcon’s preimage computation, using ratios between real and imaginary parts of the public hash polynomial to recover the secret key. In an ELMO simulation of ARM Cortex-M0 leakage, the author reports a 98.3% success rate with 4,000 traces for chosen-message and filtered non-chosen-message variants.
+The authors recover the low-order TLS PreMasterSecret bytes first, rather than narrowing the entire padded RSA plaintext from the top. Against a standards-conforming 2048-bit PKCS#1 v1.5 oracle they report a median 1,801 queries, 84.8% overall success, and 68.3% of runs finishing within 30 seconds at a measured 2.6 ms round-trip time; they also identify 640 vulnerable Tranco Top-1M domains and demonstrate malicious software-update injection.
 
-**Why it matters:** Protecting only the preimage computation does not contain leakage introduced by subsequent floating-point share recombination.
+**Why it matters:** It turns a repeatedly rediscovered legacy weakness into a practical single-server attack under realistic low-latency conditions, reducing the protection offered by connection timeouts and server isolation.
 
-**Caveat:** The evidence comes from a leakage simulator rather than physical-device measurements; device dependence, trace alignment, and the proposed rejection-sampling countermeasure require hardware validation.
+**Caveat:** Exploitation still requires an active network position, a usable PKCS#1 v1.5 padding oracle, and favorable latency or batching; the measured prevalence and end-to-end impact do not imply that every legacy-RSA endpoint is exploitable.
 
-### 2. [Breaking the \(n^2\) Barrier: Information-Theoretic MPC with Sub-Quadratic Communication](https://eprint.iacr.org/2026/2311)
+### 2. [Provable Subexponential Algorithms for NIST Third-Round Lattice Families](https://eprint.iacr.org/2026/2386)
 
-**Alexander Bienstock, Yuval Efron, Kevin Yeo · October 2 · Multi-party computation**
+**Yiming Gao, Xuyuan Han, Honggang Hu · October 6; revised October 8 · Post-quantum cryptanalysis**
 
-For an honest majority with corruption threshold below \((1/2-\epsilon)n\), the authors construct adaptively and maliciously secure information-theoretic MPC with \(o(n^2)\) communication for a range of small circuits and sublinear numbers of input parties. They also prove that subquadratic communication is impossible against a stronger-than-standard adaptive rushing adversary, even for constant-size circuits.
+For growing parameter families associated with Kyber/ML-KEM, FrodoKEM, SABER, NTRU LPRime, Dilithium/ML-DSA, Falcon, and cyclic NTRU, the authors give provable classical secret-recovery algorithms with subexponential time and space in their stated asymptotic regimes. The methods combine Gaussian-list sampling, coordinate tests, and an affine-slice search for NTRU-type relations.
 
-**Why it matters:** Prior information-theoretic MPC protocols paid an additive near-quadratic communication cost independent of circuit size; this result breaks that barrier in a nontrivial regime.
+**Why it matters:** A rigorous subexponential result spanning all seven NIST third-round lattice families sharpens the asymptotic picture beyond heuristic attacks and deserves estimator-level follow-up.
 
-**Caveat:** The improvement depends on restricted circuit size and depth plus \(o(n)\) input parties, so it is not a universal subquadratic MPC protocol and currently offers asymptotic rather than deployment benchmarks.
+**Caveat:** The paper expressly says that its parameter regimes and asymptotic bounds do not establish lower concrete security for currently specified schemes or parameter sets.
 
-### 3. [An Analysis of the ITU-T Multiple Cryptographic Algorithms X.509 Extensions for PQC Migration](https://eprint.iacr.org/2026/2297)
+### 3. [Optimal Statistical Oblivious RAM and Search Tree in the External-Memory Model](https://eprint.iacr.org/2026/2419)
 
-**Falko Strenzke · October 1 · Post-quantum migration / PKI**
+**Andrew Krapivin, Elaine Shi · October 11 · Oblivious data structures**
 
-The paper analyzes the “Catalyst” X.509 extensions that place an alternative key and issuer signature beside the traditional ones. It formalizes a downgrade in which recovery of one classical CA key permits replacement of hybrid chains with traditional-only certificates, demonstrates the resulting exposure in wolfSSL, and identifies signature-repurposing and RFC 5280 consistency problems.
+The paper claims the first statistically secure ORAM with optimal \(O(\log_B N)\) block-transfer overhead when \(B \geq \log^{1+\epsilon}N\), and an optimal statistically secure oblivious search tree at \(B \geq \log^{2+\epsilon}N\). This removes a long-standing squared-logarithmic overhead in broad external-memory regimes.
 
-**Why it matters:** A certificate can appear migration-ready while still permitting a quantum attacker to route validation entirely through compromised classical evidence.
+**Why it matters:** Matching the known lower bound under statistical security could materially improve the theory behind privacy-preserving memory access and enclave-oriented data structures.
 
-**Caveat:** Some findings concern ambiguities or permitted behaviors rather than vulnerabilities in every implementation; affected profiles, relying-party policies, and library configurations need individual review.
+**Caveat:** Optimality holds only under the stated wide-block assumptions; concrete constants, client storage, failure probabilities, and full-system performance remain to be evaluated.
 
-### 4. [Affine-Padding Rabin-Oracle Factoring](https://eprint.iacr.org/2026/2256)
+### 4. [Barely Sublinear RAM-FHE from Plain LWE](https://eprint.iacr.org/2026/2412)
 
-**Alexandra-Ioana Buzățoiu, Diana Maimuț, David Naccache · September 29; revised October 1 · Applied cryptanalysis**
+**Keewoo Lee · October 11 · Fully homomorphic encryption**
 
-The authors adapt a one-sided number field sieve to an affine-padded Rabin square-root oracle and obtain nontrivial congruences of squares with probability one half per dependency. They claim factoring complexity \(L_n(1/3,1.526\ldots)\), below the general number field sieve constant \(1.923\ldots\), and provide an open-source implementation plus a complete toy recovery.
+The construction evaluates each RAM step on encrypted memory in \(o(N/\log N)\) time using plain, unstructured LWE, whereas the prior concrete-assumption construction used Ring-LWE. A supporting result removes the common reference string from a plain-LWE doubly efficient PIR scheme in the standard model.
 
-**Why it matters:** The sign ambiguity that normally complicates Rabin roots becomes a factorization signal, showing that simple affine redundancy does not safely constrain a root oracle.
+**Why it matters:** Even a barely sublinear step cost shows that RAM-FHE from plain LWE can beat scanning the full encrypted memory, broadening the assumptions under which sublinear access is possible.
 
-**Caveat:** The attack requires extensive access to the specified oracle and collapses when padding is cryptographically hashed rather than an affine function of an attacker-chosen message; it is not a generic RSA or Rabin break.
+**Caveat:** This is an asymptotic feasibility result rather than a practical FHE implementation; the saving is slight and concrete ciphertext, key, and evaluation costs are not yet established.
 
-### 5. [SPIN: Fast Codes for Correlation Generation and Polynomial Commitments](https://eprint.iacr.org/2026/2317)
+### 5. [On the Instantiability of the Fujisaki–Okamoto Transform for Trapdoor Functions](https://eprint.iacr.org/2026/2365)
 
-**Stanislav Peceny, Rahul Rachuri, Srinivasan Raghuraman, Peter Rindal · October 2 · PCG / polynomial commitments**
+**Carter Luck, Xinyu Mao, Adam O'Neill · October 7 · Public-key cryptography**
 
-SPIN combines an outer expander-style code with a recursive inner construction and formally verifies its asymptotic distance and rate guarantees in Lean. The authors report generating \(2^{20}\) 128-bit correlation blocks in 9.3 ms on one Ryzen 9 7950X core, 89 million hashed Silent OTs per second in the stated configuration, and 1.63–2.29× higher Flock prover throughput after replacing Ligerito with SPIN–Brakedown.
+The authors show that a message-only implicit-rejection KEM formulation following ML-KEM-style rejection and key derivation is uninstantiable in general for every efficient \(G\) with superlogarithmic output, under their stated assumptions and a specially constructed trapdoor function. They then introduce distributional injective extractability as a sufficient property for a hybrid-encryption formulation and prove it in random-oracle settings.
 
-**Why it matters:** The same code family targets two major cryptographic workloads: pseudorandom correlation generation and transparent polynomial commitments.
+**Why it matters:** The work clarifies a fundamental boundary between random-oracle proofs and standard-model instantiation for one of the most important CCA transformations in post-quantum cryptography.
 
-**Caveat:** Several timings exclude setup, base correlations, networking, extraction, or Fiat–Shamir costs; the proof-system configuration also produces larger proofs and slower verification.
+**Caveat:** The negative result is a general separation built from contrived underlying functions, not an attack on ML-KEM; the positive standard-model route depends on a new hash property for which no standard-model construction is yet known.
 
-### 6. [On the Pseudorandomness of Simple Quantum Processes](https://eprint.iacr.org/2026/2303)
+### 6. [Mercury: Fuzzy Private Set Intersection with Communication and Computation Logarithmic in the Threshold](https://eprint.iacr.org/2026/2409)
 
-**Jesko Dujmovic, Jonas Haferkamp, Alexander Poremba · October 1 · Quantum cryptographic foundations**
+**Qi Liu, Kang Yang, Binwu Xiang, Xiaojie Guo, Cheng Hong, Yu Yu · October 11 · Privacy-preserving protocols**
 
-The authors construct efficiently sampled local quantum processes that become approximate unitary \(t\)-designs with negligible moment error yet remain efficiently distinguishable from random using only polylogarithmically many queries. They also give a stronger separation at polynomial moments and propose alternative conjectures for when simple random quantum circuits might yield pseudorandom unitaries.
+Mercury combines homomorphic encryption and secure two-party computation in a mask-then-compare design whose computation and communication grow logarithmically with the public distance threshold. The authors report 9.0–63.9× LAN speedups and 8.7–26.1× less communication for balanced two-dimensional inputs, plus 55.7–132.4× WAN speedups in completed unbalanced tests against selected 2025 baselines.
 
-**Why it matters:** Matching many statistical moments—often used as a proxy for scrambling or randomness—does not by itself provide computational pseudorandomness.
+**Why it matters:** Approximate matching is the expensive part of fuzzy PSI, so replacing threshold-linear behavior with logarithmic dependence could substantially widen its practical range.
 
-**Caveat:** The counterexamples are intentionally constructed, and the stronger separation uses highly structured ensembles; the work does not show that standard random-circuit families fail to be pseudorandom.
+**Caveat:** The headline gains are author-reported for selected dimensions, thresholds, networks, and comparison implementations; higher-dimensional data, leakage, and normalized independent benchmarks need study.
 
-### 7. [ECLIPSE: Strongly Unforgeable Isogeny Signatures from the Prime-Degree Variant of PRISM](https://eprint.iacr.org/2026/2312)
+### 7. [Average-Case Hardness of Lattice Problems in Special Genera of Fixed Rank](https://eprint.iacr.org/2026/2411)
 
-**Dustin Ray · October 2 · Post-quantum signature implementation**
+**Koen de Boer, Maxime Bombar, Aurel Page, Wessel van Woerden · October 11 · Lattice foundations**
 
-ECLIPSE implements PRISM’s prime-degree variant on the current SQIsign Round-3 primes, avoiding the auxiliary-isogeny ambiguity that prevents ordinary SQIsign from achieving strong unforgeability in its specification. The prototype reports 206-byte level-I signatures, signing 2.3× faster than the compared SQIsign assembly build, and verification costing approximately 1.7–2× as much.
+Assuming the Generalized Riemann Hypothesis, the authors give worst-case-to-average-case reductions inside special genera of fixed-rank Hermitian lattices for variants of SVP, CVP, BDD, DSP, and discrete Gaussian sampling. They apply the framework to a minimal lattice-isomorphism-based KEM with a tighter, more direct security proof.
 
-**Why it matters:** It turns a previously unparameterized construction into interoperable implementations with concrete formats and measurements after recent SQIsign parameter changes.
+**Why it matters:** Lattice-isomorphism schemes replace a structured lattice with a random member of the same genus; a reduction inside that genus directly addresses the hardness distribution their security arguments need.
 
-**Caveat:** The paper explicitly leaves a formal SUF-CMA proof to future work, so the title’s intended security property should not yet be treated as established.
+**Caveat:** The result assumes GRH, fixes the lattice rank, incurs an approximation-factor loss, and still separately assumes that the scheme's lattice is indistinguishable from a random lattice of its genus.
 
-### 8. [zk-BAN: An Efficient Anonymous Blocklisting System with Signature-Based Revocation](https://eprint.iacr.org/2026/2274)
+### 8. [Separating One-Way Functions from Verifiable Delay Functions](https://eprint.iacr.org/2026/2408)
 
-**Kosei Akama, Yoshimichi Nakatsuka, Koichi Moriyama, Keisuke Uehara · September 30 · Privacy / anonymous authentication**
+**Hamza Abusalah, Nicholas Brandt, Ziyi Guan, Kristina Hostáková · October 11 · Cryptographic foundations**
 
-zk-BAN lets a service block credentials associated with abusive past authentications while preserving unlinkability for honest users. By filtering the revocation list and partially sharing PRF-tag computations, the authors report approximately 600 ms proof generation and 2 ms verification in modeled large-scale workloads—136× faster proving and 32× faster verification than their prior-work comparison.
+The paper gives a fully black-box, relativizing separation showing that verifiable delay functions do not imply one-way functions. Combined with earlier random-oracle-model barriers in the other direction, the authors conclude that there is no black-box implication between VDFs and one-way functions in either direction.
 
-**Why it matters:** Signature-based revocation avoids the policy restrictions of short revocation windows but has historically been expensive for long-offline users and large blocklists.
+**Why it matters:** Public verifiability does not bridge timed cryptography and Minicrypt through black-box techniques, narrowing the routes available for constructing one primitive from the other.
 
-**Caveat:** The reported speedups rely on modeled workloads, selected baselines, and zk-SNARK implementation choices; operational privacy also depends on list construction, credential issuance, and metadata outside the proof.
+**Caveat:** An oracle separation rules out a class of black-box reductions; it does not prove that non-black-box constructions or implications are impossible in the standard model.
 
 ## Other notable papers by topic
 
-- **Coding foundations:** [Expander-Based Codes at the Gilbert–Varshamov Bound](https://eprint.iacr.org/2026/2315) gives asymptotic and certified finite-length distance bounds for sparse code ensembles relevant to LPN and pseudorandom correlation generators, but provides neither a decoder nor a full protocol-security proof.
-- **Symmetric cryptography:** [An Input-Fed AES-Round Family for Fixed-Length Hashing](https://eprint.iacr.org/2026/2314) proposes AES-NI-speed hashing for high-entropy fixed-size inputs and analyzes reduced-round differential, integral, collision, and meet-in-the-middle behavior; random-function security remains a design assumption rather than a proof.
-- **Consensus protocols:** [Defeating Time-Average Selfish Mining Across Epoch Boundaries](https://eprint.iacr.org/2026/2275) proposes a pipelined-buffer difficulty adjustment and reports simulations neutralizing the modeled orphan-exclusion strategy at a 40% adversarial hash share with a buffer depth of 16.
-- **Foundations and conference revisions:** [Non-Interactive Black-Box Witness-Indistinguishable Commit-and-Prove](https://eprint.iacr.org/2026/2286) is a minor revision of TCC 2026 work based on strong targeted hitting-set generators. [Output-Adaptive ABE for Circuits from LWE](https://eprint.iacr.org/2026/2305) is a minor ASIACRYPT 2026 revision covering dynamic target outputs with fixed policy structure.
-- **Post-quantum implementation:** The ECLIPSE paper is complemented by this week’s [Dimension-4 SQIsign measurements](https://eprint.iacr.org/2026/2221) from the previous window; both should be interpreted in light of the new Round-3 parameters and their distinct verification/security trade-offs.
+- **Symmetric cryptanalysis and implementation:** [KIFA](https://eprint.iacr.org/2026/2410) extends integral fault attacks on DEFAULT, GIFT-64/128, and BAKSHEESH under stated fault models. [New Constructions of Quadratic and Cubic Permutations Admitting Optimal Threshold Implementations](https://eprint.iacr.org/2026/2416) gives four construction methods, including a proof that every four-bit cubic permutation admits an optimal threshold implementation, though one route is explicitly costly.
+- **Proofs and polynomial commitments:** [Fast Polynomial Arithmetic in the Exponent without Roots of Unity](https://eprint.iacr.org/2026/2413) preserves quasi-linear asymptotic complexity without suitable field roots of unity and sketches applications to batched KZG proofs and verifiable mixnets; its proposed method is estimated at about twice the cost of NTT when NTT is available.
+- **Post-quantum deployment:** [Deploying Native-Rust KpqC](https://eprint.iacr.org/2026/2342) demonstrates Korean KpqC KEMs and signatures through rustls, an OQS-compatible C interface, and a constrained satellite-link model, with author-reported memory and size benefits for selected schemes.
+- **Foundations and secret sharing:** [Individual Cryptography from Iterated Squaring](https://eprint.iacr.org/2026/2418) builds sequential secret sharing with snitching and self-incriminating decryption under a new knowledge assumption. [Unpredictability from Parity](https://eprint.iacr.org/2026/2417) derives sharper bias bounds for XOR correctors on Markovian sources. [The Power of Multislices in Monotone Computation](https://eprint.iacr.org/2026/2415) proves formula lower bounds with applications to multilinear secret sharing.
+- **Material revisions of older papers:** [Resettable Non-Interactive Zero-Knowledge: Attacks and Defenses](https://eprint.iacr.org/2026/1036), first posted May 22 and revised October 8, now presents selective-reset witness-recovery attacks and a PRF-based compiler defense. [HOVER](https://eprint.iacr.org/2026/1778), an older McEliece-analysis preprint updated October 8, reports faster linear-algebra recovery on five TII challenges while stating that the present method does not threaten Classic McEliece parameters.
 
 ## Watch next
 
-- Physical-device reproduction of the Falcon leakage and evaluation of rejection sampling versus fully masked Gaussian sampling.
-- Proof-level scrutiny and concrete implementations of the subquadratic information-theoretic MPC protocol.
-- Responses from ITU-T, PKI vendors, and relying-party libraries on hybrid-certificate downgrade and RFC 5280 compatibility.
-- Independent benchmarking of SPIN across complete Silent OT and proof-system pipelines, including setup, networking, proof size, and verifier cost.
-- A formal strong-unforgeability proof for ECLIPSE and broader cryptanalysis of its prime-degree design.
-
+- Emergency patching or configuration guidance from affected PKCS#1 v1.5 products and infrastructure providers after the Reverse-Bleichenbacher measurements.
+- Concrete-security estimator updates for the new provable lattice algorithms, especially whether any current standardized parameter set moves materially.
+- Independent proof review and implementation evidence for the optimal ORAM/search-tree and plain-LWE RAM-FHE constructions.
+- Reproduction of Mercury across higher-dimensional datasets and uniform network, leakage, and security settings.
+- Standard-model candidates for the new Fujisaki–Okamoto hash property and further analysis of whether its separation informs real KEM designs.
 
 ---
 
 ## Previous digests
 
+- [September 29–October 5, 2026](digests/2026/2026-10-05.md)
 - [September 22–28, 2026](digests/2026/2026-09-28.md)
 - [September 15–21, 2026](digests/2026/2026-09-21.md)
 - [September 8–14, 2026](digests/2026/2026-09-14.md)
