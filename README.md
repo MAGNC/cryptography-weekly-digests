@@ -2,120 +2,121 @@
 
 > The latest weekly digest is displayed directly on this page. Each issue is also preserved as a dated Markdown file in the archive.
 
-[Archived copy of this issue](digests/2026/2026-11-02.md)
+[Archived copy of this issue](digests/2026/2026-11-09.md)
 
 ---
 
-**Coverage:** first public postings from October 27–November 2, 2026. Cross-posts and routine updates were removed; one older paper with a materially important security revision is labeled explicitly.
+**Coverage:** first public postings from November 3–9, 2026. Cross-posts and routine updates were removed; one older paper with a materially important security revision is labeled explicitly, and newly deposited conference versions are identified separately.
 
 ## Executive summary
 
-Implementation security dominates this week: three independent papers report concrete power or electromagnetic key-recovery paths against shuffled ML-DSA, Falcon/FN-DSA sampling, and SMAUG-T polynomial-to-message conversion. The most consequential revision is not a new paper: the authors of a March FROST-capacity proposal now state that their current protocol is forgeable after finding a non-trivial ROS attack. On the constructive side, new work removes discrete-log dependence from rerandomizable garbling via an LWE construction, gives high-precision CKKS noise cleaning for asynchronous threshold decryption, and quantitatively benchmarks constant-time analysis tools. A separate isogeny paper turns a previously conditional attack bound into an unconditional result; all fresh claims still require independent proof and implementation review.
+Implementation and mode-level cryptanalysis lead this week: a single ARM Cortex-M4 trace reportedly recovers AIMer keys during either key generation or signing, while a major revision gives probability-one forgeries and chosen-ciphertext breaks for three AESpolyW-based AEAD designs. A new unconditional algorithm lowers the asymptotic cost of the superspecial isogeny problem in dimension two, and another paper rules out a proposed independent-leakage repair for private-coin evasive LWE. Constructive work includes actively secure lattice-based PIR, a post-quantum threshold account-recovery protocol, and a foundational lower bound showing the black-box optimality of the GGM PRF construction. An arXiv result also transfers polynomial-space exact-SVP algorithms to exact CVP; all fresh claims and benchmarks remain subject to independent review.
 
 ## Most relevant papers
 
-### 1. [Unshuffling Fisher-Yates: Practical Recovery of Length-128 Permutations and Application to ML-DSA](https://eprint.iacr.org/2026/2658)
+### 1. [Exploiting Matrix-Vector Multiplication in AIMer: Single-Trace Attacks on Key Generation and Signing](https://eprint.iacr.org/2026/2795)
 
-**Jonas Schupp, Anna Baumeister, Antonia Wachter-Zeh, Georg Sigl · October 27 · Post-quantum side channels**
+**Süleyman Emir Akın, Abdullah Talayhan, Özcan Öztürk · November 6 · Post-quantum side channels**
 
-The authors recover length-128 Fisher–Yates permutations from one trace by extracting timing, Hamming-weight, and identity leakage and solving a soft constraint problem. Applied to a shuffled ML-DSA-44 NTT, the recovered ordering lets them reconstruct the secret polynomial directly or after enumerating a few remaining coefficients.
+The authors attack AIMer v3.0 by observing a matrix-vector routine that expands each secret bit into an all-zero or all-one mask. Public operations within the same trace supply labelled training data, allowing a non-profiled classifier to recover the unknown bits; on ARM Cortex-M4, the paper reports exact recovery from every one of 100 traces for each tested key-generation and signing parameter set.
 
-**Why it matters:** It shows that shuffling the NTT is not, by itself, a sufficient countermeasure when permutation generation and butterfly operations both leak.
+**Why it matters:** AIMer is one of two signature schemes selected in the Korean post-quantum competition, and the reported attack needs only one execution rather than a profiling device or many signatures.
 
-**Caveat:** The attack combines leakage from a particular software implementation and measurement setup; portability to other devices, shuffle implementations, compilers, and masked NTTs remains open.
+**Caveat:** The evidence concerns the current Cortex-M4 implementation and leakage behavior; portability to other platforms and resistance of masked, bitsliced, or otherwise restructured implementations need independent testing.
 
-### 2. [Falcon Key Recovery from Joint Sampler Leakages](https://eprint.iacr.org/2026/2656)
+### 2. [Repeated Masks, Predictable Splices: Breaking AESpolyW and Its AEAD Applications](https://eprint.iacr.org/2026/1424) — **material security revision**
 
-**Youngchang Kim, Yongseong Park, Jaeho Jeon, Young-Sik Kim · October 27 · Post-quantum side channels**
+**Shuping Mao, Peng Wang, Jiadong Han, Tingting Guo, Yan Jia, Ying Chen · revised November 7; first posted July 12 · Symmetric cryptanalysis**
 
-The paper combines three leakage channels from each Falcon SamplerZ call—center class, sign bit, and proposal magnitude—into interval constraints, then solves for the key without LLL or BKZ. On PQClean Falcon-512 for ARM Cortex-M4, the authors report recovering all 50 evaluation keys within 34 signatures, with a median of 11; a reduced-resolution attack recovered 38 of 50 c-fn-dsa keys within 200 signatures.
+The revised paper gives a two-encryption, one-decryption distinguisher against AESpolyW on five-block messages by splicing ciphertext blocks and exploiting repeated internal values. For three encode-then-encipher AEAD applications, two encryptions at different nonces produce a ciphertext accepted with probability one, and a related IND-CCA experiment identifies the challenge plaintext with probability one.
 
-**Why it matters:** FN-DSA standardization work cannot treat individual sampler leakages in isolation if their joint information is sufficient for rapid key recovery.
+**Why it matters:** The attacks target the mode structure and contradict the intended privacy or authenticity guarantees of AESpolyW-based applications presented at IEEE S&P 2026.
 
-**Caveat:** The classifiers are profiled on specific Cortex-M4 implementations, and the results do not establish the same trace counts against masked, blinded, or otherwise hardened samplers.
+**Caveat:** This is an older paper whose attack content was materially revised during the window; impact on deployed systems is unclear and depends on exact use of the affected constructions.
 
-### 3. [Optimizing FROST for Message Capacity](https://eprint.iacr.org/2026/563) — **material security revision**
+### 3. [An Improved Algorithm to Solve the Isogeny Problem in Dimension 2 with Precomputation](https://eprint.iacr.org/2026/2808)
 
-**Philipp Jovanovic, Ben Riva, Arnab Roy · revised November 2; first posted March 20 · Threshold signatures**
+**Maria Corte-Real Santos · November 6 · Isogeny cryptanalysis**
 
-The original paper proposed using (k+1) presignatures for (k) messages and claimed security in the generic-group and random-oracle models. The authors now state that an AI-assisted search found a non-trivial ROS attack, that the current proposed protocol is forgeable, and that a fix will be published later; the article remains online for reference.
+After a one-time precomputation depending only on the field characteristic \(p\), the algorithm solves each superspecial dimension-two isogeny instance in expected \(p^{3/4+o(1)}\) time and memory. Including precomputation, a single instance costs \(p^{19/23+o(1)}\), improving on the rigorous \(p^{1+o(1)}\) Costello–Smith bound without heuristic assumptions.
 
-**Why it matters:** This is a direct withdrawal of the paper's central security conclusion for a proposed FROST optimization.
+**Why it matters:** Dimension-two isogeny problems appear in proposed cryptographic constructions, so a lower unconditional exponent directly sharpens their asymptotic security analysis.
 
-**Caveat:** The attack details and proposed repair are not yet public, and this revision concerns the capacity optimization rather than standard FROST itself.
+**Caveat:** This is an asymptotic algorithm, not a practical break of a named deployed system; concrete costs, precomputation reuse, memory, and parameter consequences still need analysis.
 
-### 4. [Smoothness of Shortest Isogenies to Frobenius Conjugates](https://eprint.iacr.org/2026/2677)
+### 4. [Independent Leakage Does Not Save Evasive LWE](https://eprint.iacr.org/2026/2792)
 
-**Yi Ouyang, Wei Wei, Zheng Xu · October 29 · Isogeny cryptanalysis**
+**Yao-Ching Hsieh · November 5 · Lattice assumptions / cryptanalysis**
 
-The authors bound the probability that the minimum-degree isogeny from a random supersingular curve to its Frobenius conjugate is smooth. They use this to make Wesolowski's (p^{1/3+o(1)}) attack on the supersingular endomorphism-ring problem unconditional, rather than dependent on a smoothness heuristic.
+Private-coin evasive LWE has been used in advanced lattice constructions, including witness encryption, but recent counterexamples motivated a proposed repair requiring the secret and target samplers and their leakage to be independent. Assuming LWE and indistinguishability obfuscation, this paper constructs counterexamples to both binding and hiding variants even under that restriction, using only target-matrix leakage and an honestly sampled independent secret.
 
-**Why it matters:** Endomorphism-ring hardness underlies parts of modern isogeny cryptography, so removing a heuristic from the best known attack sharpens the foundation on which parameters are assessed.
+**Why it matters:** It closes off a seemingly natural repair path for an assumption supporting several ambitious lattice-based constructions.
 
-**Caveat:** The result is an asymptotic attack analysis, not a practical break of a named deployed scheme; concrete parameter consequences still need estimator-level work.
+**Caveat:** The counterexample itself uses strong assumptions, including indistinguishability obfuscation, and refutes a general formulation rather than automatically invalidating every application or more restricted assumption.
 
-### 5. [Poly2MsgLeaks: Certified Key Recovery from Polynomial-to-Message Leakage](https://eprint.iacr.org/2026/2657)
+### 5. [Actively Secure PIR from Verifiable Linear Relations over Rings](https://eprint.iacr.org/2026/2804)
 
-**Yongseong Park, YoungChang Kim, Jeongdo Kim, Young-Sik Kim · October 27 · Post-quantum side channels**
+**Louis Tremblay Thibault · November 6 · Private information retrieval**
 
-Poly2MsgLeaks is a profiled chosen-ciphertext power attack on SMAUG-T's TiMER parameter set. Using physical traces from an STM32F415, the authors report 999 recoveries in 1,000 unseen keys with six traces, and 1,000 of 1,000 with a verifier-driven policy averaging 7.021 traces and no false acceptances.
+The paper adds active-server security to homomorphic-encryption-based PIR through a sumcheck-style proof for linear relations over power-of-two cyclotomic rings. Its Rust implementation reportedly improves the prior proof component by more than an order of magnitude and roughly doubles end-to-end performance; for a 4 GiB database, offline communication and client storage fall from a cited 3.29 GiB to 128 MiB.
 
-**Why it matters:** It turns leakage from a small polynomial-to-message decision into certified full-key recovery with a very small number of physical executions.
+**Why it matters:** Ordinary HE-based PIR protects query privacy against passive servers but does not ensure that a malicious server returns a correct database response.
 
-**Caveat:** The attack assumes chosen ciphertexts and profiling access to a selected implementation; the tested single-write and two-share masked variants resisted this six-execution attack.
+**Caveat:** The preprocessing is database-specific and substantial, while the benchmark comparisons, security parameters, server hardware, proof soundness, and update costs require normalized independent evaluation.
 
-### 6. [Rerandomizable Garbling Beyond BHHO-KMHE and a Construction from LWE](https://eprint.iacr.org/2026/2664)
+### 6. [The GGM PRF Construction is Optimal](https://eprint.iacr.org/2026/2803)
 
-**Raphael Heitjohann, Jonas von der Heyden, Tibor Jager · October 28 · MPC / post-quantum foundations**
+**Bar Alon, Itai Dinur, Muthuramakrishnan Venkitasubramaniam · November 6 · Cryptographic foundations**
 
-The paper moves the job of hiding homomorphic transformations from the encryption layer into the garbling construction, allowing weaker key-and-message homomorphic encryption. It then instantiates the needed primitive with an LWE-based GSW variant, yielding the first rerandomizable garbling scheme not based on discrete-log-type assumptions.
+The authors prove lower bounds for fully black-box constructions of pseudorandom functions from pseudorandom generators. For length-doubling PRGs, their result makes the GGM construction with domain compression asymptotically optimal in both adaptive rounds and calls, and rules out polynomial-query non-adaptive constructions even for one-bit weak PRFs on superpolynomial domains.
 
-**Why it matters:** Rerandomizable garbling supports advanced objects including multi-hop homomorphic encryption and YOSO-style MPC; an LWE route potentially makes those constructions post-quantum.
+**Why it matters:** It resolves a long-standing question about whether a fundamentally cheaper fully black-box route from PRGs to PRFs could replace GGM.
 
-**Caveat:** The contribution is a new theoretical construction, and its concrete parameters, efficiency, and full post-quantum security analysis need independent study.
+**Caveat:** The lower bounds apply to fully black-box constructions; non-black-box techniques or constructions exploiting additional structure are not ruled out.
 
-### 7. [High Precision Noise Cleaning for CKKS with Application to Asynchronous Threshold CKKS](https://eprint.iacr.org/2026/2675)
+### 7. [BeaverDam: A Post-Quantum Threshold Key Recovery Protocol](https://eprint.iacr.org/2026/2794)
 
-**Zhihao Li, Cheng Hong, Tao Wei · October 29 · FHE / threshold cryptography**
+**Benedikt Auerbach, Shuichi Katsumata, Kaoru Takemure, Ida Tucker · November 6 · Post-quantum protocols**
 
-The authors choose CKKS cleaning polynomials and evaluation parameters from a complete error bound, composing lower-degree Hermite polynomials to reach very small normalized noise with lower cost. In OpenFHE, binary cleaning to a (2^{-300}) target falls from 9.63 to 1.54 seconds in their comparison, and the technique supports an asynchronous threshold-CKKS construction with strong simulation security in the random-oracle model.
+BeaverDam targets password-protected recovery of end-to-end-encryption backup keys without relying on one central server. It introduces a one-time threshold oblivious random function tailored to the recovery setting and claims post-quantum or hybrid security with performance close to classical threshold systems such as Signal SVR3 and Juicebox.
 
-**Why it matters:** Noise cleaning is a practical bottleneck when threshold decryption needs statistical hiding and exact recovery, not merely ordinary CKKS correctness.
+**Why it matters:** Account recovery is a practical weak point in otherwise end-to-end encrypted systems, and existing efficient threshold designs are primarily classically secure.
 
-**Caveat:** The performance numbers are author-reported for selected parameters, and the security proof uses the random-oracle model; independent benchmarks should include key storage, communication, and end-to-end threshold costs.
+**Caveat:** The ePrint is a newly deposited major revision of an ACM CCS 2026 paper; the one-time primitive has narrower guarantees than a general OPRF, and concrete comparison details and operational recovery assumptions need review.
 
-### 8. [A Quantitative Evaluation of Constant-Time Analysis Tools](https://eprint.iacr.org/2026/2682)
+### 8. [Exact \(\ell_p\)-CVP via Euclidean SVP in Polynomial Space](https://arxiv.org/abs/2611.07313)
 
-**Zhenzhi Lai, Zhiyuan Zhang, Tian Qiu, Van-Thuan Pham, Udaya Parampalli · October 29 · Implementation security**
+**Jiseung Kim, Minkyu Kim, Hyung Tae Lee · November 5 · Lattice algorithms**
 
-AutoBench-CT supplies manually verified per-violation ground truth for 64 cryptographic tasks and evaluates seven constant-time analysis tools on operational performance, detection quality, and usability. The authors use the results to explain recurring limitations and propose a composite analysis pipeline rather than relying on one detector.
+The authors give a randomized, rank-preserving reduction from exact \(\ell_p\)-CVP to exact Euclidean SVP for every integer \(p\ge2\), using polynomial working space outside the oracle. For \(p=2\), this transfers polynomial-space exact-SVP algorithms to exact CVP with a \(2^{O(N)}\) overhead; for fixed \(p\ge3\), it yields new exact-CVP time-space trade-offs for arbitrary rational targets.
 
-**Why it matters:** Constant-time tooling is widely used but has lacked a common quantitative benchmark, making tool choice and combined assurance difficult to justify.
+**Why it matters:** CVP is central to lattice cryptanalysis and generally harder to handle in low space than SVP, so a rank-preserving polynomial-space transfer clarifies their algorithmic relationship.
 
-**Caveat:** This is an ACSAC 2026 paper newly deposited on ePrint, and 64 tasks cannot represent every language, compiler, microarchitecture, or cryptographic coding pattern.
+**Caveat:** The reduction makes exponentially many oracle calls, and the result is asymptotic; it does not directly reduce concrete security estimates for standardized lattice schemes.
 
 ## Other notable papers by topic
 
-- **Zero knowledge:** [Improving Code Rate and Query Complexity for the Ligero-IOP System](https://eprint.iacr.org/2026/2681) analyzes Ligero in the list-decoding regime and proposes out-of-domain sampling to improve soundness and permit Reed–Solomon rates above one half while preserving constant rounds and perfect honest-verifier zero knowledge.
-- **FHE systems:** [Rosemary](https://arxiv.org/abs/2610.38262) moves selected FHE work into NAND-flash storage and reports a 185.7× geometric-mean speedup over chosen CPU/GPU baselines and 3.7× over prior accelerators; the evaluation is an architecture-and-system study rather than a deployment on production SSD silicon.
-- **MPC and protocols:** [HELLO, GOODBYE](https://eprint.iacr.org/2026/2651) shows that adding only start and end synchronization to suitable super-rushing-secure protocols can yield concurrent general composition, subject to straight-line simulation, setup separation, and adaptive-input conditions.
-- **Privacy and foundations:** [PIR through the Lens of Probabilistic Inference](https://eprint.iacr.org/2026/2669) connects information-theoretic PIR server computation to marginal inference and obtains faster servers for structured databases, alongside conditional lower bounds for general circuits.
-- **Implementation:** [Faster Complete Formulas and Their Application to Curves with Efficient Endomorphisms](https://eprint.iacr.org/2026/2667) reports modest but broad constant-time speedups for secp256k1 and BLS-family operations. [Tractable, Not Truncated](https://eprint.iacr.org/2026/2662) models colored TRNG noise with fractional Brownian motion and derives closed-form entropy bounds tested on FPGA and ASIC data.
-- **Private machine learning:** [OblivDGL](https://eprint.iacr.org/2026/2655) proposes MPC protocols for graph-learning workloads that reveal only graph size and reports large communication and runtime reductions against selected baselines.
-- **Older revisions not ranked as new:** [New IND-CPA-D Attacks on BFV and BGV](https://eprint.iacr.org/2026/2546), [Exact Error Bootstrapping and Comb Bootstrapping in FHEW/TFHE](https://eprint.iacr.org/2026/2630), and [RDK-CKKS](https://eprint.iacr.org/2026/2575) were updated during the window but were first posted earlier.
+- **Zero knowledge and proof systems:** [Vector Commit-and-Reduce Schemes](https://eprint.iacr.org/2026/2790) introduces Canopy and reports 20–50% smaller proofs and fewer verifier hashes for selected hash-based SNARK configurations. [SNARKs from LWE via Non-black-box Reductions](https://eprint.iacr.org/2026/2805) is a newly deposited major revision of STOC 2026 work; it obtains narrow SNARK/SNARG feasibility results under polynomial-hard LWE, Extended-Frege provability conditions, and an infinitely-often soundness formulation.
+- **Post-quantum foundations:** [A Post-Quantum Interactive Hashing Theorem](https://arxiv.org/abs/2611.06124) proves post-quantum security for multi-output interactive hashing with arbitrary relations. [Quadratic Extractors](https://arxiv.org/abs/2611.07266) gives an explicit extractor for quadratic sources with polylogarithmic min-entropy, improving dramatically over the previous near-full-entropy requirement.
+- **Post-quantum authentication:** [More Salt, Please](https://eprint.iacr.org/2026/2798) adds precomputation resistance to post-quantum asymmetric PAKE through a continuously ratcheted, salted password file, trading statelessness for simpler primitives.
+- **Hash-based authenticated encryption:** [Parallelizable Modes for Duplex-Based Authenticated Encryption](https://eprint.iacr.org/2026/2801) introduces FlightDeck to parallelize both input processing and output generation while reducing security to keyed SHAKE/TurboSHAKE properties.
+- **Lattice cryptanalysis:** [Filtered Merges Make Deeper Representation Trees Pay](https://eprint.iacr.org/2026/2802) lowers the reported random density-one Subset Sum exponent from 0.2831 to 0.2690 and gives smaller heuristic improvements for Meet-LWE with sufficiently heavy ternary secrets.
+- **Anonymous credentials:** [AirBB](https://eprint.iacr.org/2026/2762) reports 240-byte constant-size threshold credential presentations without the random-oracle model, but was first posted before this coverage window and is not ranked as a new disclosure.
+- **Symmetric foundations:** [Testing CCZ-Equivalence to Permutations](https://eprint.iacr.org/2026/2800) supplies an exact test for quadratic functions and public code/data relevant to the long-standing search for APN permutations in even dimensions.
 
 ## Watch next
 
-- Publication of the FROST ROS attack and a repaired capacity construction, followed by independent verification.
-- Reproduction of the ML-DSA, Falcon/FN-DSA, and SMAUG-T attacks across boards, compilers, and hardened implementations.
-- Concrete parameter updates for supersingular endomorphism-ring schemes after the unconditional (p^{1/3+o(1)}) analysis.
-- Independent benchmarks for high-precision CKKS cleaning and Rosemary under comparable security, memory, key-size, and I/O assumptions.
-- Broader validation of AutoBench-CT and whether composite pipelines catch compiler-induced violations missed by individual tools.
+- Independent physical reproduction of the AIMer attack and release of hardened implementations.
+- Responses from the AESpolyW designers and audits of any systems derived from its AEAD modes.
+- Concrete parameter studies for the dimension-two isogeny and exact-CVP algorithms.
+- Reassessment of constructions relying on private-coin evasive LWE and the scope of any surviving restricted formulations.
+- Independent vPIR and BeaverDam benchmarks under uniform security, network, storage, and failure assumptions.
 
 ---
 
 ## Previous digests
 
+- [October 27–November 2, 2026](digests/2026/2026-11-02.md)
 - [October 20–26, 2026](digests/2026/2026-10-26.md)
 - [October 13–19, 2026](digests/2026/2026-10-19.md)
 - [October 6–12, 2026](digests/2026/2026-10-12.md)
